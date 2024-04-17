@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+  <arg name="reference_point_cloud" default="$(find gedi)/data/shelf.pcd"/>
+
+  <node pkg="gedi" type="registration.py" name="registration" output="screen">
+    <param name="reference_point_cloud" value="$(arg reference_point_cloud)"/>
+  </node>
+</launch>
