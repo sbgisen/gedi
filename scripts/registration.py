@@ -49,7 +49,7 @@ class Registration(object):
         # initialising class
         self.__gedi = GeDi(config=config)
 
-        ref_pcd_path = rospy.get_param('reference_point_cloud', pkg_path + '/data/assets/shelf.pcd')
+        ref_pcd_path = rospy.get_param('~reference_point_cloud', pkg_path + '/data/assets/shelf.pcd')
         # getting a pair of point clouds
         pcd = o3d.io.read_point_cloud(ref_pcd_path)
         inds = np.random.choice(np.asarray(pcd.points).shape[0], self.__patches_per_pair, replace=False)
