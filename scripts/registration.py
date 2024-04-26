@@ -48,8 +48,8 @@ class Registration(object):
             'fchkpt_gedi_net': pkg_path + '/data/chkpts/3dmatch/chkpt.tar'
         }  # path to checkpoint
 
-        self.__voxel_size = .01
-        self.__patches_per_pair = 5000
+        self.__voxel_size = rospy.get_param('~voxel_size', .02)
+        self.__patches_per_pair = rospy.get_param('~patches_per_pair', 5000)
 
         # initialising class
         self.__gedi = GeDi(config=config)
@@ -97,7 +97,9 @@ class Registration(object):
         _pcd1 = torch.tensor(np.asarray(pcd1.points)).float()
 
         # computing descriptors
+        start = rospy.Time.now()
         pcd1_desc = self.__gedi.compute(pts=pts1, pcd=_pcd1)
+        rospy.loginfo(f'Gedi time: {(rospy.Time.now() - start).to_sec()}')
 
         # preparing format for open3d ransac
         pcd1_dsdv = o3d.pipelines.registration.Feature()
