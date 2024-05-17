@@ -181,6 +181,9 @@ class Registration(object):
             est_mat[2, 1] = 0
             est_mat[2, 2] = 1
             a_pcd_t = copy.deepcopy(self.__pcd0).transform(est_mat)
+            rospy.loginfo(f'Teaser time: {(rospy.Time.now() - start).to_sec()}')
+            a_pcd_t.paint_uniform_color([1, 0.706, 0])
+            pcd1.paint_uniform_color([0, 0.651, 0.929])
             o3d.visualization.draw_geometries([a_pcd_t, pcd1])
 
             pose = PoseStamped()
