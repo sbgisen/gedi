@@ -76,7 +76,9 @@ class Registration(object):
 
         self.__pub = rospy.Publisher('/gedi/pose', PoseStamped, queue_size=10)
 
-        rospy.Subscriber('/soar/head_camera/depth_registered/points', PointCloud2, self.__callback)
+        # rospy.Subscriber('/soar/head_camera/depth_registered/points', PointCloud2, self.__callback)
+        rospy.Subscriber('/soar/perception/object_detection/scene_fitting_points', PointCloud2, self.__callback)
+        rospy.loginfo('Ready to register point clouds.')
 
     def __callback(self, msg: PointCloud2) -> None:
         points = pc2.read_points(msg, field_names=('x', 'y', 'z'), skip_nans=True)
@@ -161,6 +163,16 @@ class Registration(object):
                                                                                 self.__ref_pcd_dsdv, pcd1_dsdv)
             ref_matched_key = np.squeeze(ref_matched_key)
             test_matched_key = np.squeeze(test_matched_key)
+            # ref = o3d.geometry.PointCloud()
+            # ref.points = o3d.utility.Vector3dVector(ref_matched_key.T)
+            # test = o3d.geometry.PointCloud()
+            # test.points = o3d.utility.Vector3dVector(test_matched_key.T)
+            # save as pcd
+            # pkg_path = rospkg.RosPack().get_path('gedi')
+            # o3d.io.write_point_cloud(pkg_path + '/ref.pcd', ref)
+            # o3d.io.write_point_cloud(pkg_path + '/test.pcd', test)
+            # o3d.io.write_point_cloud(pkg_path + '/ref_raw.pcd', self.__pcd0)
+            # o3d.io.write_point_cloud(pkg_path + '/test_raw.pcd', pcd1)
             est_mat, _ = self.execute_teaser_global_registration(ref_matched_key, test_matched_key)
             a_pcd_t = copy.deepcopy(self.__pcd0).transform(est_mat)
             o3d.visualization.draw_geometries([a_pcd_t, pcd1])
