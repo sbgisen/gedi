@@ -174,6 +174,12 @@ class Registration(object):
             # o3d.io.write_point_cloud(pkg_path + '/ref_raw.pcd', self.__pcd0)
             # o3d.io.write_point_cloud(pkg_path + '/test_raw.pcd', pcd1)
             est_mat, _ = self.execute_teaser_global_registration(ref_matched_key, test_matched_key)
+            # for 3dof
+            est_mat[0, 2] = 0
+            est_mat[1, 2] = 0
+            est_mat[2, 0] = 0
+            est_mat[2, 1] = 0
+            est_mat[2, 2] = 1
             a_pcd_t = copy.deepcopy(self.__pcd0).transform(est_mat)
             o3d.visualization.draw_geometries([a_pcd_t, pcd1])
 
