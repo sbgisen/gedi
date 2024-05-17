@@ -60,6 +60,13 @@ class Registration(object):
         inds = np.random.choice(np.asarray(pcd.points).shape[0], self.__patches_per_pair, replace=False)
         pts = torch.tensor(np.asarray(pcd.points)[inds]).float()
         self.__pcd0 = pcd.voxel_down_sample(self.__voxel_size)
+        # mean = np.mean(np.asarray(self.__pcd0.points), axis=0)
+        # random_floor_x = np.random.uniform(mean[0] - 3, mean[0] + 3, int(len(self.__pcd0.points)*1))
+        # random_floor_y = np.random.uniform(mean[1] - 3, mean[1] + 3, int(len(self.__pcd0.points) * 1))
+        # random_floor_z = np.array([0] * int(len(self.__pcd0.points) * 1))
+        # self.__pcd0.points.extend(
+        #     o3d.utility.Vector3dVector(np.array([random_floor_x, random_floor_y, random_floor_z]).T))
+
         pcd0_ = torch.tensor(np.asarray(self.__pcd0.points)).float()
         pcd0_desc = self.__gedi.compute(pts=pts, pcd=pcd0_)
         self.__ref_pcd_dsdv = o3d.pipelines.registration.Feature()
@@ -93,6 +100,11 @@ class Registration(object):
 
         # applying voxelisation to the point cloud
         pcd1 = pcd.voxel_down_sample(self.__voxel_size)
+        # mean = np.mean(np.asarray(pcd1.points), axis=0)
+        # random_floor_x = np.random.uniform(mean[0] - 3, mean[0] + 3, int(len(pcd1.points) * 1))
+        # random_floor_y = np.random.uniform(mean[1] - 3, mean[1] + 3, int(len(pcd1.points) * 1))
+        # random_floor_z = np.array([0] * int(len(pcd1.points) * 1))
+        # pcd1.points.extend(o3d.utility.Vector3dVector(np.array([random_floor_x, random_floor_y, random_floor_z]).T))
 
         _pcd1 = torch.tensor(np.asarray(pcd1.points)).float()
 
