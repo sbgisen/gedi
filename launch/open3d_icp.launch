@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+  <arg name="reference_point_cloud" default="$(find gedi)/data/assets/shelf_mesh.pcd"/>
+  <arg name="manager" default="icp_registration_2d_nodelet_manager"/>
+
+  <node name="$(arg manager)" pkg="nodelet" type="nodelet" args="manager" output="screen"/>
+  <node name="input_relay" pkg="nodelet" type="nodelet" args="load jsk_topic_tools/Relay $(arg manager)">
+    <remap from="~input" to="/soar/head_camera/depth_registered/points"/>
+  </node>
+  <node name="pass_through" pkg="nodelet" type="nodelet" args="load pcl/PassThrough $(arg manager)">
+    <remap from="~input" to="input_relay/output"/>
+    <rosparam subst_value="true">
+      filter_field_name: z
+      filter_limit_min: -0.10
+      filter_limit_max: 2.50
+      filter_limit_negative: false
+      keep_organized: true
+      input_frame: map
+      output_frame: map
+    </rosparam>
+  </node>
+  <node pkg="gedi" type="icp.py" name="registration" output="screen">
+    <param name="reference_point_cloud" value="$(arg reference_point_cloud)"/>
+    <!-- <rosparam>
+      transform: [4.05, 3.55, 0.0, 0, 0, 0.7068252, 0.7073883]
+    </rosparam> -->
+    <rosparam>
+      transform: [4.1, 3.5, 0.0, 0, 0, 0.7512804, 0.6599831]
+    </rosparam>
+  </node>
+</launch>

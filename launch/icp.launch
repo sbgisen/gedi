@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch>
+  <arg name="reference_model" default="$(find gedi)/data/assets/shelf_mesh.pcd"/>
+  <arg name="sensor_frame_id" default="head_camera_rgb_optical_frame"/>
+  <arg name="base_frame_id" default="map"/>
+  <arg name="manager" default="icp_registration_2d_nodelet_manager"/>
+
+  <node name="$(arg manager)" pkg="nodelet" type="nodelet" args="manager" output="screen"/>
+  <node name="shelf_pose_publisher" pkg="rostopic" type="rostopic" args="pub output geometry_msgs/PoseStamped -r 10 -s '{header: {stamp: now, frame_id: $(arg base_frame_id)}, pose: {position: {x: 4.05, y: 3.55, z: 0.0}, orientation: {z: 0.7068252, w: 0.7073883}}}'" output="screen"/>
+  <!-- <node name="shelf_pose_publisher" pkg="rostopic" type="rostopic" args="pub output geometry_msgs/PoseStamped -r 10 -s '{header: {stamp: now, frame_id: $(arg base_frame_id)}, pose: {position: {x: 4.05, y: 3.65, z: 0.0}, orientation: {z: 0.7512804, w: 0.6599831}}}'"> -->
+  <!-- table -->
+  <!-- <node name="shelf_pose_publisher" pkg="rostopic" type="rostopic" args="pub output geometry_msgs/PoseStamped -r 10 -s '{header: {stamp: now, frame_id: $(arg base_frame_id)}, pose: {position: {x: 2.5, y: 1.85, z: 0.0}, orientation: {z: 0.1, w: 0.8}}}'">
+    <remap from="output" to="~output"/>
+  </node> -->
+  <node name="pcd_reader_with_pose" pkg="nodelet" type="nodelet" args="load jsk_pcl_utils/PCDReaderWithPose $(arg manager)">
+    <remap from="~input" to="shelf_pose_publisher/output"/>
+    <rosparam subst_value="true">
+      pcd_file: $(arg reference_model)
+    </rosparam>
+  </node>
+  <node name="input_relay" pkg="nodelet" type="nodelet" args="load jsk_topic_tools/Relay $(arg manager)">
+    <remap from="~input" to="/soar/head_camera/depth_registered/points"/>
+  </node>
+  <node name="pass_through" pkg="nodelet" type="nodelet" args="load pcl/PassThrough $(arg manager)">
+    <remap from="~input" to="input_relay/output"/>
+    <rosparam subst_value="true">
+      filter_field_name: z
+      filter_limit_min: -0.10
+      filter_limit_max: 2.50
+      filter_limit_negative: false
+      keep_organized: true
+      input_frame: $(arg base_frame_id)
+      output_frame: $(arg base_frame_id)
+    </rosparam>
+  </node>
+  <node name="downsample_input" pkg="nodelet" type="nodelet" args="load pcl/VoxelGrid $(arg manager)">
+    <remap from="~input" to="pass_through/output"/>
+    <rosparam>
+      filter_field_name: z
+      filter_limit_min: -10000
+      filter_limit_max: 10000
+      keep_organized: true
+      leaf_size: 0.008
+    </rosparam>
+  </node>
+  <node name="downsample_reference" pkg="nodelet" type="nodelet" args="load pcl/VoxelGrid $(arg manager)">
+    <remap from="~input" to="pcd_reader_with_pose/output"/>
+    <rosparam>
+      filter_field_name: z
+      filter_limit_min: -10000
+      filter_limit_max: 10000
+      keep_organized: true
+      leaf_size: 0.008
+    </rosparam>
+  </node>
+  <!-- <node name="offset_points_publisher" pkg="gedi" type="reference_pub.py">
+    <remap from="reference_points" to="downsample_reference/output"/>
+    <remap from="icp_result" to="icp_registration/icp_result"/>
+
+  </node> -->
+  <node name="icp_registration" pkg="nodelet" type="nodelet" args="load jsk_pcl/ICPRegistration $(arg manager)" respawn="true">
+    <remap from="~input" to="downsample_input/output"/>
+    <remap from="~input_reference" to="downsample_reference/output"/>
+    <!-- <remap from="~input_reference" to="reference_offsets"/> -->
+    <rosparam>
+      transform_3dof: true
+      use_flipped_initial_pose: false
+      max_iteration: 1000
+      algorithm: 1
+      maximum_optimizer_iterations: 1000
+      ndt_resolution: 0.1
+      ndt_step_size: 0.01
+      ndt_outlier_ratio: 0.5
+    </rosparam>
+  </node>
+</launch>
