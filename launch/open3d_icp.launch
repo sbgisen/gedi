@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <launch>
-  <arg name="reference_point_cloud" default="$(find gedi)/data/assets/shelf_mesh.pcd"/>
+  <!-- gazebo shelf -->
+  <!-- <arg name="reference_point_cloud" default="$(find gedi)/data/assets/shelf_mesh.pcd"/> -->
+  <!-- <arg name="reference_point_cloud" default="$(find gedi)/data/assets/real_shelf_cad.pcd"/> -->
+  <arg name="reference_point_cloud" default="$(find gedi)/data/assets/real_table_one_shot.pcd"/>
   <arg name="manager" default="icp_registration_2d_nodelet_manager"/>
 
   <node name="$(arg manager)" pkg="nodelet" type="nodelet" args="manager" output="screen"/>
@@ -21,11 +24,21 @@
   </node>
   <node pkg="gedi" type="icp.py" name="registration" output="screen">
     <param name="reference_point_cloud" value="$(arg reference_point_cloud)"/>
+    <!-- gazebo shelf -->
     <!-- <rosparam>
       transform: [4.05, 3.55, 0.0, 0, 0, 0.7068252, 0.7073883]
     </rosparam> -->
-    <rosparam>
-      transform: [4.1, 3.5, 0.0, 0, 0, 0.7512804, 0.6599831]
-    </rosparam>
+    <!-- <rosparam>
+      transform: [4.0, 3.3, 0.0, 0, 0, 0.7512804, 0.6599831]
+    </rosparam> -->
+
+    <!-- real_shelf_cad -->
+    <!-- <rosparam>
+      transform: [13.3, 0.16, 0.0, 0, 0, 1, 0]
+    </rosparam> -->
+    <!-- real_table_cad -->
+    <!-- <rosparam>
+      transform: [12.9, 1.14, 0.0, 0, 0, 0, 1]
+    </rosparam> -->
   </node>
 </launch>

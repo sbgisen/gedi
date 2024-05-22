@@ -16,7 +16,6 @@
 # limitations under the License.
 #
 
-import copy
 
 import numpy as np
 import open3d as o3d
@@ -56,25 +55,50 @@ class Registration(object):
         pcd.estimate_normals(search_param=o3d.geometry.KDTreeSearchParamHybrid(radius=0.02, max_nn=10))
 
         threshold = 0.02
-        reg_p2l = o3d.pipelines.registration.registration_icp(
-            self.__ref_pcd, pcd, threshold, self.__trans_init,
-            o3d.pipelines.registration.TransformationEstimationPointToPlane())
+        device = o3d.core.Device('CPU:0')
+        voxel_sizes = o3d.utility.DoubleVector([0.2, 0.1, 0.05])
+        source = o3d.t.geometry.PointCloud().from_legacy(self.__ref_pcd)
+        target = o3d.t.geometry.PointCloud().from_legacy(pcd)
+        criteria_list = [
+            o3d.t.pipelines.registration.ICPConvergenceCriteria(relative_fitness=0.001,
+                                                                relative_rmse=0.001,
+                                                                max_iteration=50),
+            o3d.t.pipelines.registration.ICPConvergenceCriteria(relative_fitness=0.0001,
+                                                                relative_rmse=0.0001,
+                                                                max_iteration=50),
+            o3d.t.pipelines.registration.ICPConvergenceCriteria(0.00001, 0.00001, 30),
+            # o3d.t.pipelines.registration.ICPConvergenceCriteria(0.000001, 0.000001, 20),
+            # o3d.t.pipelines.registration.ICPConvergenceCriteria(0.0000001, 0.0000001, 10)
+        ]
+        max_correspondence_distances = o3d.utility.DoubleVector([0.5, 0.3, 0.14])
+        init_trans = o3d.core.Tensor(self.__trans_init, dtype=o3d.core.Dtype.Float32)
+
+        def callback_after_iteration(loss_log_map): return print(
+            'Iteration Index: {}, Scale Index: {}, Scale Iteration Index: {}, Fitness: {}, Inlier RMSE: {},'.
+            format(loss_log_map['iteration_index'].item(), loss_log_map['scale_index'].item(), loss_log_map[
+                'scale_iteration_index'].item(), loss_log_map['fitness'].item(), loss_log_map['inlier_rmse'].item()))
+        reg_p2l = o3d.t.pipelines.registration.multi_scale_icp(
+            source, target, voxel_sizes, criteria_list, max_correspondence_distances, init_trans,
+            o3d.t.pipelines.registration.TransformationEstimationPointToPlane(), callback_after_iteration)
+        # reg_p2l = o3d.pipelines.registration.registration_icp(
+        #     self.__ref_pcd, pcd, threshold, self.__trans_init,
+        #     o3d.pipelines.registration.TransformationEstimationPointToPlane())
 
         rospy.loginfo(reg_p2l)
         rospy.loginfo('Transformation is:')
         rospy.loginfo(reg_p2l.transformation)
-        self.draw_registration_result(self.__ref_pcd, pcd, reg_p2l.transformation)
+        self.draw_registration_result(source, target, reg_p2l.transformation)
 
     def draw_registration_result(self, source, target, transformation):
-        source_temp = copy.deepcopy(source)
-        target_temp = copy.deepcopy(target)
-        source_temp2 = copy.deepcopy(source)
+        source_temp = source.clone()
+        target_temp = target.clone()
+        source_temp2 = source.clone()
         source_temp2.transform(self.__trans_init)
-        source_temp2.paint_uniform_color([0, 1, 0])
+        source_temp2.paint_uniform_color([0., 0.87, 0.3])
         source_temp.paint_uniform_color([1, 0.706, 0])
         target_temp.paint_uniform_color([0, 0.651, 0.929])
         source_temp.transform(transformation)
-        o3d.visualization.draw_geometries([source_temp2, source_temp, target_temp])
+        o3d.visualization.draw_geometries([source_temp2.to_legacy(), source_temp.to_legacy(), target_temp.to_legacy()])
 
 
 if __name__ == '__main__':
